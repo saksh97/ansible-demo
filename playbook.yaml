@@ -1,0 +1,77 @@
+---
+- name: Deploy Docker and Multi-Site Nginx Containers
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Docker prerequisites
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: yes
+
+    - name: Install Docker CE
+      ansible.builtin.apt:
+        name: docker.io
+        state: latest
+
+    - name: Ensure Docker service is running and enabled
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create web document root directories on remote host
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /var/www/zay
+        - /var/www/infinite_loop
+
+    - name: Synchronize Zay website files to remote host
+      ansible.builtin.copy:
+        src: zay/
+        dest: /var/www/zay/
+        mode: '0644'
+
+    - name: Synchronize Infinite Loop website files to remote host
+      ansible.builtin.copy:
+        src: 2117_infinite_loop/
+        dest: /var/www/infinite_loop/
+        mode: '0644'
+
+    - name: Stop host-level Nginx if running to clear port 80
+      ansible.builtin.service:
+        name: nginx
+        state: stopped
+        enabled: no
+      failed_when: false
+
+    - name: Deploy Container 1 - Zay Shop on Port 80
+      community.docker.docker_container:
+        name: nginx_zay_port_80
+        image: nginx:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "80:80"
+        volumes:
+          - /var/www/zay:/usr/share/nginx/html:ro
+
+    - name: Deploy Container 2 - Infinite Loop on Port 81
+      community.docker.docker_container:
+        name: nginx_loop_port_81
+        image: nginx:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "81:80"
+        volumes:
+          - /var/www/infinite_loop:/usr/share/nginx/html:ro
+
