@@ -14,7 +14,7 @@ sudo apt install ansible -y
 ### Installation
 Clone this repository to your local machine:
 ```bash
-git clone https://github.com
+git clone https://github.com/saksh97/ansible-demo.git
 cd ansible-demo
 ```
 
